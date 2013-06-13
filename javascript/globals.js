@@ -1,7 +1,7 @@
-exports.height = 200;
-exports.width  = 200;
+exports.height = 600;
+exports.width  = 800;
 exports.mouse_pos = [0, 0];
-
+exports.particles = [];
 /**
  * Set's the position of a sprite's rect
  */

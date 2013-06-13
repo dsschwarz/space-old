@@ -1,5 +1,5 @@
 /**
- * The ship is the player. Has x and y speed, acclr and declr rates.
+ * The ship is the player. Inherits from base.BaseSprite
  * Able to fire and 'jump'
  * Functions:
  * update(msDuration) - Executes every tick. Moves ship, adjusts cooldowns
@@ -21,9 +21,7 @@ var Ship = function(rect) {
    // call superconstructor
    Ship.superConstructor.apply(this, arguments);
 
-   // Physics Properties
-   this.xspeed = 0;
-   this.yspeed = 0;
+   // Physics Properties 
    this.accleration = 60; // How fast ship accelerates (constant)
    this.deceleration = .52; // Percentage ship slows per second
    this.angular_v = 0; // Angular velocity (how fast it's rotating; deg/s)
@@ -36,8 +34,8 @@ var Ship = function(rect) {
    this.reload_time = [3,1,2];
    this.heat = 0;
    this.heat_max = 100;
-   this.cool_rate = 10;
-   this.overheat = 10;
+   this.cool_rate = 10; // How fast heat//overheat dissipates
+   this.overheat = 30; // How long ship stays overheated
 
    // Flags
    this.charging = false;
@@ -51,9 +49,6 @@ var Ship = function(rect) {
    // Display Properties
    this.originalImage = gamejs.image.load("images/ship.png");
    this.chargeImage = gamejs.image.load("images/ship_charge.gif");
-   var dims = this.originalImage.getSize();
-   // rotation is clockwise from positive x-axis (gamejs thing)
-   this.rotation = 0;
    this.image = gamejs.transform.rotate(this.originalImage, this.rotation);
    this.center = [.33, .5] // Percentage width/height from left/top
    this.rect = new gamejs.Rect(rect);
@@ -64,9 +59,10 @@ gamejs.utils.objects.extend(Ship, base.BaseSprite);
 
 
 Ship.prototype.update = function(msDuration) {
-   this.rotate(msDuration);
-   this.move(msDuration);
-   this.check_heat(msDuration);
+   var _s = msDuration / 1000;
+   this.rotate(_s);
+   this.move(_s);
+   this.check_heat(_s);
    // Jump charge
    if (this.charging) {
       if (this.o_timer > 0) {
@@ -75,8 +71,8 @@ Ship.prototype.update = function(msDuration) {
       } else {
          this.image = gamejs.transform.rotate(this.chargeImage, this.rotation);
          if (this.jump_charge < max_jump_charge) {
-            this.jump_charge += this.charge_rate * (msDuration/1000);
-            this.heat += .3 * this.charge_rate * (msDuration/1000);
+            this.jump_charge += this.charge_rate * _s;
+            this.heat += .3 * this.charge_rate * _s;
          }
       }
    } else {
@@ -86,23 +82,24 @@ Ship.prototype.update = function(msDuration) {
    this.rect.left = position[0];
    this.rect.top = position[1];
 };
-Ship.prototype.move = function(msDuration) {
+Ship.prototype.move = function(_s) {
    // Call this from update. Otherwise, acclr depends on comp specs
    if (this.accelerating && (this.o_timer == 0)) {
-      this.xspeed += Math.cos(this.rotation/180*Math.PI)*this.accleration*(msDuration/1000);
-      this.yspeed += Math.sin(this.rotation/180*Math.PI)*this.accleration*(msDuration/1000);
+      this.attach_particles();
+      this.xspeed += Math.cos(this.rotation/180*Math.PI)*this.accleration*_s;
+      this.yspeed += Math.sin(this.rotation/180*Math.PI)*this.accleration*_s;
    };
-   this.yspeed *= 1-(this.deceleration * (msDuration/1000));
-   this.xspeed *= 1-(this.deceleration * (msDuration/1000));
-   this._x += this.xspeed * (msDuration/1000);
-   this._y += this.yspeed * (msDuration/1000);
+   this.yspeed *= 1-(this.deceleration * _s);
+   this.xspeed *= 1-(this.deceleration * _s);
+   this._x += this.xspeed * _s;
+   this._y += this.yspeed * _s;
    this.check_in_bounds();
 };
-Ship.prototype.rotate = function(msDuration) {
+Ship.prototype.rotate = function(_s) {
    if (this.o_timer == 0) {
-      this.angular_v += this.rotating * this.angular_a * (msDuration/1000);
+      this.angular_v += this.rotating * this.angular_a * _s;
    }
-   this.angular_v *= 1-(this.angular_d * (msDuration/1000));
+   this.angular_v *= 1-(this.angular_d * _s);
    this.rotation += this.angular_v;
    if (this.rotation > 360) {
       this.rotation = this.rotation%360;
@@ -140,19 +137,19 @@ Ship.prototype.jump = function() {
    this.jump_charge = 0;
    this.charging = 0;
 };
-Ship.prototype.check_heat = function(msDuration) {
+Ship.prototype.check_heat = function(_s) {
    if ((this.heat > this.heat_max) && (this.o_timer == 0)) {
       this.o_timer = this.overheat;
       this.heat = this.heat_max * .95
    } else if (this.o_timer > 0) {
       console.log("Counting down")
       console.log(this.o_timer)
-      this.o_timer -= this.cool_rate * (msDuration/1000);
+      this.o_timer -= this.cool_rate * _s;
       if (this.o_timer < 0) {
          this.o_timer = 0;
       }
    } else if(this.heat > 0) {
-      this.heat -= this.cool_rate * (msDuration/1000);
+      this.heat -= this.cool_rate * _s;
       if (this.heat < 0) {
          this.heat = 0;
       }
