@@ -7,6 +7,7 @@ var $v = require('gamejs/utils/vectors');
 var $e = require('gamejs/event');
 var globals = require('globals');
 var $ship = require('ship');
+var $p = require('projectile');
 
 
 /**
@@ -20,6 +21,11 @@ function main() {
    // create ship
    var ship = new $ship.Ship([100, 100]);
 
+   var projectiles = new gamejs.sprite.Group();
+   for (var j=0;j<10;j++) {
+      projectiles.add(new $p.Projectile([0,0]));
+   }
+
    var particleImage = gamejs.image.load('images/particle.png');
 
    // game loop
@@ -30,9 +36,13 @@ function main() {
          globals.particles.forEach(function(particle) {
             var r = (msDuration/1000);
             particle.timer -= 1;
-            particle.left += particle.deltaX * r;
-            particle.top += particle.deltaY * r;
-
+            particle._x += particle.deltaX * r;
+            particle._y += particle.deltaY * r;
+            console.log(particle._x, particle._y)
+            var pos = globals.get_position([particle._x, particle._y], [.5, .5], particleImage.getSize(), 0);
+            console.log(pos);
+            particle.left = pos[0];
+            particle.top = pos[1];
          });
 
 
@@ -53,9 +63,10 @@ function main() {
          } else {
             gamejs.draw.rect(display, '#ee3333', new gamejs.Rect([globals.width * .05, 10], [globals.width * .9, 20]), 0);
          }
+         projectiles.update(msDuration);
+         projectiles.draw(mainSurface);
          ship.update(msDuration);
          ship.draw(mainSurface);
-
 
    });
 
@@ -107,5 +118,6 @@ function main() {
 gamejs.preload(['images/ship.png']);
 gamejs.preload(['images/ship_charge.gif']);
 gamejs.preload(['images/particle.png']);
+gamejs.preload(['images/wiki.png']);
 
 gamejs.ready(main);

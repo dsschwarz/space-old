@@ -78,6 +78,7 @@ Ship.prototype.update = function(msDuration) {
    } else {
       this.image = gamejs.transform.rotate(this.originalImage, this.rotation);
    }
+   globals.offset = [(this._x - globals.width/2), (this._y - globals.height/2)];
    var position = globals.get_position([this._x, this._y], this.center, this.getSize(), -this.rotation);
    this.rect.left = position[0];
    this.rect.top = position[1];
@@ -93,7 +94,7 @@ Ship.prototype.move = function(_s) {
    this.xspeed *= 1-(this.deceleration * _s);
    this._x += this.xspeed * _s;
    this._y += this.yspeed * _s;
-   this.check_in_bounds();
+   // this.check_in_bounds();
 };
 Ship.prototype.rotate = function(_s) {
    if (this.o_timer == 0) {
@@ -133,7 +134,7 @@ Ship.prototype.jump = function() {
       this._x += this.jump_charge*Math.cos(this.rotation/180*Math.PI)
       this._y += this.jump_charge*Math.sin(this.rotation/180*Math.PI);
    }
-   this.check_in_bounds();
+   // this.check_in_bounds();
    this.jump_charge = 0;
    this.charging = 0;
 };

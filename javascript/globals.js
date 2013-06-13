@@ -2,9 +2,7 @@ exports.height = 600;
 exports.width  = 800;
 exports.mouse_pos = [0, 0];
 exports.particles = [];
-/**
- * Set's the position of a sprite's rect
- */
+exports.offset = [];
 function get_position(true_pos, center, dim, angle) {
 	if (angle > 360) {
 		angle = angle%360;
@@ -29,8 +27,8 @@ function get_position(true_pos, center, dim, angle) {
 function get_xy(angle, l1, l2, l3, true_pos) {
 	var sin = Math.sin(angle / 180 * Math.PI);
 	var cos = Math.cos(angle / 180 * Math.PI);
-	var x = true_pos[0] - l1*sin - l2*cos;
-	var y = true_pos[1] - l1*cos - l3*sin;
+	var x = true_pos[0] - l1*sin - l2*cos - exports.offset[0];
+	var y = true_pos[1] - l1*cos - l3*sin - exports.offset[1];
 	return [x, y];
 }
 
