@@ -13,6 +13,7 @@ var $v = require('gamejs/utils/vectors');
 var $e = require('gamejs/event');
 var globals = require('globals');
 var base = require('base')
+var $bomb = require('bomb');
 
 var max_jump_charge = 800;
 var min_jump_charge = 100;
@@ -31,20 +32,28 @@ var Ship = function(rect) {
    // Special Properties
    this.jump_charge = 0;
    this.charge_rate = 100;
-   this.reload_time = [3,1,2];
    this.heat = 0;
    this.heat_max = 100;
    this.cool_rate = 10; // How fast heat//overheat dissipates
    this.overheat = 30; // How long ship stays overheated
+   this.bomb_speed = 200;
 
    // Flags
    this.charging = false;
    this.accelerating = false;
    // 1 if rotating right, -1 if left, else 0.
    this.rotating = 0;
-   this.weapon_ready = [false, false, false];
    // If overheated, != 0, counts down per second
    this.o_timer = 0;
+
+   // Weapons - Each array index holds data for one weapon
+   this.ammo = [0,0,0];
+   this.reload_time = [3,5,1];
+   this.reload_timer = [0,0,0];
+   // Delay between shots in milliseconds;
+   this.delay = [300,10,200];
+   this.delay_timer = [0,0,0];
+   this.weapon_firing = [false, false, false];
 
    // Display Properties
    this.originalImage = gamejs.image.load("images/ship.png");
@@ -63,6 +72,7 @@ Ship.prototype.update = function(msDuration) {
    this.rotate(_s);
    this.move(_s);
    this.check_heat(_s);
+   this.check_weapons(msDuration);
    // Jump charge
    if (this.charging) {
       if (this.o_timer > 0) {
@@ -86,7 +96,9 @@ Ship.prototype.update = function(msDuration) {
 Ship.prototype.move = function(_s) {
    // Call this from update. Otherwise, acclr depends on comp specs
    if (this.accelerating && (this.o_timer == 0)) {
-      this.attach_particles();
+      for (var i = 0; i < 3; i++) {
+         this.attach_particles();
+      }
       this.xspeed += Math.cos(this.rotation/180*Math.PI)*this.accleration*_s;
       this.yspeed += Math.sin(this.rotation/180*Math.PI)*this.accleration*_s;
    };
@@ -111,23 +123,6 @@ Ship.prototype.rotate = function(_s) {
       console.log("Increasing rotation: " + this.rotation)
    }
 }
-Ship.prototype.fire = function(key) {
-   switch(key) 
-   {
-   case $e.K_w:
-      console.log("1: " + key)
-      break;
-   case $e.K_q:
-      console.log("2: "+ key)
-      break;
-   case $e.K_e:
-      console.log("3 " + key)
-      break;
-   default:
-      console.log("invalid key")
-      break;
-   }
-};
 Ship.prototype.jump = function() {
    if (this.jump_charge > min_jump_charge) {
       this.jump_charge -= min_jump_charge;
@@ -138,6 +133,32 @@ Ship.prototype.jump = function() {
    this.jump_charge = 0;
    this.charging = 0;
 };
+Ship.prototype.check_weapons = function(msDuration) {
+   if (this.weapon_firing[0]) {
+      // Attach weapon 1
+   }
+   if (this.weapon_firing[1]) {
+      console.log("1");
+      if (this.delay_timer[1] <= 0) {
+         var bomb = new $bomb.Bomb([this._x, this._y])
+         speed = this.bomb_speed;
+         bomb.xspeed = (this.xspeed + Math.cos(this.rotation / 180 * Math.PI) * speed);
+         bomb.yspeed = (this.yspeed + Math.sin(this.rotation / 180 * Math.PI) * speed);
+         console.log(globals.projectiles);
+         globals.projectiles.add(bomb);
+         this.delay_timer[1] = this.delay[1];
+      } else {
+         this.delay_timer[1] -= msDuration;
+      }
+   } else if(this.delay_timer[1] > 0) {
+      this.delay_timer[1] -= msDuration;
+   }
+   if (this.weapon_firing[2]) {
+      // Attach weapon 3
+   }
+}
+
+// Utilities
 Ship.prototype.check_heat = function(_s) {
    if ((this.heat > this.heat_max) && (this.o_timer == 0)) {
       this.o_timer = this.overheat;
@@ -156,8 +177,6 @@ Ship.prototype.check_heat = function(_s) {
       }
    }
 }
-
-// Utilities
 Ship.prototype.begin_charge = function() {
    if (this.o_timer == 0) {
       this.charging = true;
@@ -168,6 +187,22 @@ Ship.prototype.point_to = function(coords) {
    console.log(diff)
    // this.rotation = Math.atan2(diff[1], diff[0]) * 180 / Math.PI
    // this.image = gamejs.transform.rotate(this.originalImage, this.rotation);
+};
+Ship.prototype.attach_particles = function() {
+   var particleImage = gamejs.image.load('images/particle.png');
+   var speed = -40 - Math.random() * 20;
+   var sidespeed = 60 - Math.random() * 120;
+   var pos = globals.get_position([this._x, this._y], [.5, .5], particleImage.getSize(), 0);
+   globals.particles.push({
+       left: pos[0],
+       top: pos[1],
+       _x: this._x,
+       _y: this._y,
+       timer: 6 + Math.random()*4,
+       alpha: Math.random(),
+       deltaX: Math.cos(this.rotation / 180 * Math.PI) * speed + Math.sin(this.rotation / 180 * Math.PI) * sidespeed,
+       deltaY: Math.cos(this.rotation / 180 * Math.PI) * sidespeed + Math.sin(this.rotation / 180 * Math.PI) * speed,
+    });
 };
 Ship.prototype.check_in_bounds = function() {
    if (this._y > globals.height) {
@@ -181,5 +216,46 @@ Ship.prototype.check_in_bounds = function() {
       this._x = globals.width;
    }
 };
+
+Ship.prototype.fire = function(key) {
+   switch(key) 
+   {
+   case $e.K_q:
+      this.weapon_firing[0] = true;
+      console.log("1: "+ key)
+      break;
+   case $e.K_w:
+      this.weapon_firing[1] = true;
+      break;
+   case $e.K_e:
+      this.weapon_firing[2] = true;
+      console.log("2 " + key)
+      break;
+   default:
+      console.log("invalid key")
+      break;
+   }
+};
+/**
+ * Called on key up
+ * @param  {gamejs.event.key} key The key that was released
+ * 
+ */
+Ship.prototype.stop_firing = function(key) {
+   switch(key) 
+   {
+   case $e.K_q:
+      this.weapon_firing[0] = false;
+      break;
+   case $e.K_w:
+      this.weapon_firing[1] = false;
+      break;
+   case $e.K_e:
+      this.weapon_firing[2] = false;
+      break;
+   default:
+      console.log("Invalid Key");
+   }
+}
 
 exports.Ship = Ship;

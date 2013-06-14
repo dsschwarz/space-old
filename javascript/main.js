@@ -7,7 +7,8 @@ var $v = require('gamejs/utils/vectors');
 var $e = require('gamejs/event');
 var globals = require('globals');
 var $ship = require('ship');
-var $p = require('projectile');
+var $proj = require('projectile');
+var $planet = require('planet');
 
 
 /**
@@ -21,55 +22,107 @@ function main() {
    // create ship
    var ship = new $ship.Ship([100, 100]);
 
-   var projectiles = new gamejs.sprite.Group();
    for (var j=0;j<10;j++) {
-      projectiles.add(new $p.Projectile([0,0]));
+      globals.planets.add(new $planet.Planet([0,0]));
    }
 
    var particleImage = gamejs.image.load('images/particle.png');
+   var starImage = gamejs.image.load('images/star.png');
 
    // game loop
    var mainSurface = gamejs.display.getSurface();
+   var draw_bars = function() {
+      if (ship.o_timer == 0) {
+         gamejs.draw.rect(display, '#ffffff', new gamejs.Rect([globals.width * .05, 10], [globals.width * .9, 20]), 0);
+         gamejs.draw.rect(display, '#3333ee', new gamejs.Rect([globals.width * .05, 10], [ship.heat / ship.heat_max * globals.width * .9, 20]), 0);
+      } else {
+         gamejs.draw.rect(display, '#ee3333', new gamejs.Rect([globals.width * .05, 10], [globals.width * .9, 20]), 0);
+      }
+   };
+   var draw_particles = function(msDuration) {
+
+      globals.particles = globals.particles.filter(function(particle) {
+          return particle.timer > 0;
+      });
+      globals.particles.forEach(function(particle) {
+         var r = (msDuration/1000);
+         particle.timer -= 1;
+         particle._x += particle.deltaX * r;
+         particle._y += particle.deltaY * r;
+         var pos = globals.get_position([particle._x, particle._y], [.5, .5], particleImage.getSize(), 0);
+         particle.left = pos[0];
+         particle.top = pos[1];
+         particle.alpha = particle.timer/10;
+         particleImage.setAlpha(particle.alpha);
+         display.blit( particleImage, [particle.left, particle.top]);
+      });
+   };
+   var starGroup = {stars: [], bounds: {left: 0, right: 0, top: 0, bottom: 0}};
+   var generate_stars = function(left_edge, top_edge, width, height) {
+      var star_num = height * width / 10000;
+      for (var i = 0; i < star_num; i++) {
+         console.log(width, height, left_edge, top_edge)
+         var new_size = Math.random()*3;
+         starGroup.stars.push({
+            _x: Math.random()*width + left_edge,
+            _y: Math.random()*height + top_edge,
+            left: 0,
+            top: 0,
+            alpha: Math.random()*.5 + .5,
+            dim: [new_size, new_size]
+         })
+      };
+   }
+   var draw_stars = function() {
+      var bounds = starGroup.bounds;
+      var height = 0;
+      var width = 0;
+      var left_edge = 0;
+      var top_edge = 0;
+      if (ship._x + globals.width > bounds.right) {
+         console.log("Generating right")
+         generate_stars(bounds.right, bounds.top, globals.width, bounds.bottom - bounds.top);
+         starGroup.bounds.right += globals.width;
+      }
+      if (ship._x - globals.width < bounds.left) {
+         console.log("Generating left")
+         generate_stars(bounds.left - globals.width, bounds.top, globals.width, bounds.bottom - bounds.top);
+         starGroup.bounds.left -= globals.width;
+      }
+      if (ship._y + globals.height > bounds.bottom) {
+         console.log("Generating below")
+         generate_stars(bounds.left, bounds.bottom,bounds.right - bounds.left, globals.height);
+         starGroup.bounds.bottom += globals.height;
+      }
+      if (ship._y - globals.height < bounds.top) {
+         console.log("Generating above")
+         generate_stars(bounds.left, bounds.top - globals.height, bounds.right - bounds.left, globals.height);
+         starGroup.bounds.top -= globals.height;
+      }
+      starGroup.stars.forEach(function(star) {
+         star.left = star._x - globals.offset[0];
+         star.top = star._y - globals.offset[1];
+         starImage.setAlpha(star.alpha);
+         display.blit( starImage, [star.left, star.top]);
+      });
+   };
    // msDuration = time since last tick() call
    gamejs.onTick(function(msDuration) {
          mainSurface.fill("#000000");
-         globals.particles.forEach(function(particle) {
-            var r = (msDuration/1000);
-            particle.timer -= 1;
-            particle._x += particle.deltaX * r;
-            particle._y += particle.deltaY * r;
-            console.log(particle._x, particle._y)
-            var pos = globals.get_position([particle._x, particle._y], [.5, .5], particleImage.getSize(), 0);
-            console.log(pos);
-            particle.left = pos[0];
-            particle.top = pos[1];
-         });
+         draw_particles(msDuration);
+         draw_stars();
 
-
-         if (globals.particles.length > 0) {
-            globals.particles = globals.particles.filter(function(particle) {
-                return particle.timer > 0;
-            });
-         }
-         globals.particles.forEach(function(particle) {
-            particleImage.setAlpha(particle.alpha);
-            display.blit( particleImage, [particle.left, particle.top]);
-         });
-         
-         // Draw heat
-         if (ship.o_timer == 0) {
-            gamejs.draw.rect(display, '#ffffff', new gamejs.Rect([globals.width * .05, 10], [globals.width * .9, 20]), 0);
-            gamejs.draw.rect(display, '#3333ee', new gamejs.Rect([globals.width * .05, 10], [ship.heat / ship.heat_max * globals.width * .9, 20]), 0);
-         } else {
-            gamejs.draw.rect(display, '#ee3333', new gamejs.Rect([globals.width * .05, 10], [globals.width * .9, 20]), 0);
-         }
-         projectiles.update(msDuration);
-         projectiles.draw(mainSurface);
+         // Draw heat and health
+         draw_bars();
+         globals.projectiles.update(msDuration);
+         globals.projectiles.draw(mainSurface);
+         globals.planets.update(msDuration);
+         globals.planets.draw(mainSurface);
          ship.update(msDuration);
          ship.draw(mainSurface);
 
    });
-
+   
    gamejs.onEvent(function(event) {
       //Keys that fire ship weapons
       var fire_keys = [$e.K_w, $e.K_q, $e.K_e];
@@ -86,6 +139,8 @@ function main() {
             }        
          } else if (event.key == $e.K_s) {
             ship.jump();
+         } else if (fire_keys.indexOf(event.key) >= 0) {
+            ship.stop_firing(event.key);
          }
       } else if (event.type === $e.KEY_DOWN) {
          if (event.key == $e.K_SPACE) {
@@ -102,6 +157,7 @@ function main() {
       } else if (event.type === $e.MOUSE_MOTION) {
          if (display.rect.collidePoint(event.pos)) {
             // ship.point_to(event.pos);
+            // console.log(event.pos)
             globals.mouse_pos = event.pos;
          }
       } else if (event.type === $e.MOUSE_DOWN) {
@@ -118,6 +174,7 @@ function main() {
 gamejs.preload(['images/ship.png']);
 gamejs.preload(['images/ship_charge.gif']);
 gamejs.preload(['images/particle.png']);
+gamejs.preload(['images/star.png']);
 gamejs.preload(['images/wiki.png']);
 
 gamejs.ready(main);

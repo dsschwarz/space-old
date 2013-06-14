@@ -4,7 +4,6 @@ var globals = require('globals');
 
 var BaseSprite = function (rect) {
 	BaseSprite.superConstructor.apply(this, arguments);
-	var particleImage = gamejs.image.load('images/particle.png');
 	this.center = [0,0]
 	this._x = 100;
 	this._y = 100;
@@ -17,21 +16,7 @@ var BaseSprite = function (rect) {
 	this.getSize = function() {
 		return this.originalImage.getSize();
 	}
-	this.attach_particles = function() {
-		var speed = -80 - Math.random() * 40;
-		var sidespeed = 60 - Math.random() * 120;
-		var pos = globals.get_position([this._x, this._y], [.5, .5], particleImage.getSize(), 0);
-		globals.particles.push({
-	       left: pos[0],
-	       top: pos[1],
-	       _x: this._x,
-	       _y: this._y,
-	       timer: 18 + Math.random()*4,
-	       alpha: Math.random(),
-	       deltaX: Math.cos(this.rotation / 180 * Math.PI) * speed + Math.sin(this.rotation / 180 * Math.PI) * sidespeed,
-	       deltaY: Math.cos(this.rotation / 180 * Math.PI) * sidespeed + Math.sin(this.rotation / 180 * Math.PI) * speed,
-	    });
-	}
+	
 	return this;
 }
 

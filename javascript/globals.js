@@ -1,8 +1,12 @@
+var gamejs = require('gamejs');
 exports.height = 600;
 exports.width  = 800;
 exports.mouse_pos = [0, 0];
 exports.particles = [];
-exports.offset = [];
+exports.projectiles = new gamejs.sprite.Group();
+exports.planets = new gamejs.sprite.Group();
+exports.ships = new gamejs.sprite.Group();
+exports.offset = [0, 0];
 function get_position(true_pos, center, dim, angle) {
 	if (angle > 360) {
 		angle = angle%360;
