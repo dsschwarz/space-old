@@ -102,11 +102,15 @@ function main() {
       var delete_stars = false;
       if (starGroup.stars.length > 100) {
          delete_stars = true;
+         starGroup.bounds.left = Math.max(ship._x - 2*globals.width, starGroup.bounds.left);
+         starGroup.bounds.right = Math.min(ship._x + 2*globals.width, starGroup.bounds.right);
+         starGroup.bounds.top = Math.max(ship._y - 2*globals.height, starGroup.bounds.top);
+         starGroup.bounds.bottom = Math.min(ship._y + 2*globals.height, starGroup.bounds.bottom);
       };
       for (var i = 0; i < starGroup.stars.length; ++i) {
          star = starGroup.stars[i];
-         if ((delete_stars) && ((star._x < ship._x - 2*globals.width) || (star._x > ship._x + 2*globals.width) || 
-              (star._y < ship._y - 2*globals.height) || (star._y > ship._y + 2*globals.height))) {
+         if ((delete_stars) && ((star._x < starGroup.bounds.left) || (star._x > starGroup.bounds.right) || 
+              (star._y < starGroup.bounds.top) || (star._y > starGroup.bounds.bottom))) {
                starGroup.stars.splice(i--, 1);
          } else {
             star.left = star._x - globals.offset[0];
@@ -114,12 +118,6 @@ function main() {
             starImage.setAlpha(star.alpha);
             display.blit( starImage, [star.left, star.top]);
          };
-      };
-      if (delete_stars) {
-         starGroup.bounds.left = Math.max(ship._x - 2*globals.width, starGroup.bounds.left);
-         starGroup.bounds.right = Math.min(ship._x + 2*globals.width, starGroup.bounds.right);
-         starGroup.bounds.top = Math.max(ship._y - 2*globals.height, starGroup.bounds.top);
-         starGroup.bounds.bottom = Math.min(ship._y + 2*globals.height, starGroup.bounds.bottom);
       };
    };
    // msDuration = time since last tick() call
