@@ -198,7 +198,7 @@ Ship.prototype.attach_particles = function() {
        top: pos[1],
        _x: this._x,
        _y: this._y,
-       timer: 6 + Math.random()*4,
+       timer: Math.random()*.2 + .1,
        alpha: Math.random(),
        deltaX: Math.cos(this.rotation / 180 * Math.PI) * speed + Math.sin(this.rotation / 180 * Math.PI) * sidespeed,
        deltaY: Math.cos(this.rotation / 180 * Math.PI) * sidespeed + Math.sin(this.rotation / 180 * Math.PI) * speed,
